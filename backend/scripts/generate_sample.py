@@ -28,11 +28,11 @@ def main() -> None:
         "-filter_complex",
         (
             "[0:v]drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:"
-            "text='猫咪短视频 演示素材':fontsize=64:fontcolor=0xF4EBE3:"
-            "x=(w-text_w)/2:y=h*0.38,"
+            "text='Cat Shorts Demo':fontsize=72:fontcolor=0xF4EBE3:"
+            "x=(w-text_w)/2:y=h*0.36,"
             "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:"
             "text='sample-cat.mp4':fontsize=36:fontcolor=0xE8A87C:"
-            "x=(w-text_w)/2:y=h*0.48,"
+            "x=(w-text_w)/2:y=h*0.46,"
             "drawbox=x=390:y=1100:w=300:h=180:color=0xC45C26@0.85:t=fill[v]"
         ),
         "-map",
