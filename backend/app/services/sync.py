@@ -11,6 +11,7 @@ from app.config import settings
 from app.models import SyncState
 from app.services.drive import list_remote
 from app.services.ingest import ingest_file
+from app.services.jobs import is_source_ignored
 from app.services.media import MediaError
 
 log = logging.getLogger(__name__)
@@ -28,6 +29,9 @@ def run_sync(db: Session) -> dict:
         raise
 
     for remote in remotes:
+        if is_source_ignored(db, remote.key):
+            skipped += 1
+            continue
         dest = settings.work_dir / "sync" / remote.name
         try:
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -39,6 +43,7 @@ def run_sync(db: Session) -> dict:
                 source_key=remote.key,
                 filename=remote.name,
                 mime=remote.mime,
+                honor_ignore=True,
             )
             if created:
                 ingested += 1

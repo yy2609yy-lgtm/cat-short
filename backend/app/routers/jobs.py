@@ -10,6 +10,7 @@ from app.db import get_db
 from app.models import Job
 from app.schemas import CropParams, JobOut
 from app.services import pipeline
+from app.services.jobs import delete_job
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"], dependencies=[Depends(get_current_admin)])
 
@@ -88,6 +89,17 @@ def retry(job_id: UUID, db: Session = Depends(get_db)) -> JobOut:
     db.commit()
     db.refresh(job)
     return _out(job)
+
+
+@router.delete("/{job_id}", status_code=204)
+def remove_job(job_id: UUID, db: Session = Depends(get_db)) -> None:
+    job = pipeline.get_job(db, job_id)
+    if not job:
+        raise HTTPException(404, "任务不存在")
+    try:
+        delete_job(db, job)
+    except RuntimeError as exc:
+        raise HTTPException(409, str(exc)) from exc
 
 
 @router.post("/{job_id}/publish", response_model=JobOut)

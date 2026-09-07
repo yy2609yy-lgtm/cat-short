@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models import Asset, Job
+from app.services.jobs import forget_ignored_source, is_source_ignored
 from app.services.media import MediaError, video_meta
 
 log = logging.getLogger(__name__)
@@ -33,8 +34,13 @@ def ingest_file(
     source_key: str,
     filename: str,
     mime: str = "video/mp4",
-) -> tuple[Asset, Job, bool]:
-    """Create asset+job if source_key is new. Returns (asset, job, created)."""
+    honor_ignore: bool = True,
+) -> tuple[Asset | None, Job | None, bool]:
+    """Create asset+job if source_key is new. Returns (asset, job, created).
+
+    honor_ignore=True (Drive/inbox sync): a deleted source_key is skipped.
+    honor_ignore=False (explicit local upload): clear the ignore and ingest again.
+    """
     existing = db.query(Asset).filter(Asset.source_key == source_key).one_or_none()
     if existing:
         job = db.query(Job).filter(Job.asset_id == existing.id).order_by(Job.created_at.asc()).first()
@@ -44,6 +50,12 @@ def ingest_file(
             db.commit()
             db.refresh(job)
         return existing, job, False
+
+    if honor_ignore and is_source_ignored(db, source_key):
+        log.info("Skip ignored source_key %s", source_key)
+        return None, None, False
+
+    forget_ignored_source(db, source_key)
 
     dest = settings.assets_dir / f"{uuid4().hex}_{filename}"
     dest.parent.mkdir(parents=True, exist_ok=True)
