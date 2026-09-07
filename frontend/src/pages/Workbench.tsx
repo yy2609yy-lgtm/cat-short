@@ -30,6 +30,7 @@ export default function Workbench() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   async function refresh() {
     const [j, s, st] = await Promise.all([api.jobs(), api.settings(), api.syncStatus()]);
@@ -96,6 +97,22 @@ export default function Workbench() {
       await refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "重试失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeJob(id: string) {
+    setBusy(true);
+    setErr("");
+    try {
+      await api.deleteJob(id);
+      setJobs((cur) => cur.filter((j) => j.id !== id));
+      setConfirmId(null);
+      setMsg("已删除该任务（Drive 原文件未动）");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "删除失败");
+      await refresh().catch(() => undefined);
     } finally {
       setBusy(false);
     }
@@ -181,7 +198,26 @@ export default function Workbench() {
                     从当前阶段重试
                   </button>
                 )}
+                {confirmId === job.id ? (
+                  <>
+                    <button className="btn rose" disabled={busy} onClick={() => removeJob(job.id)}>
+                      确认删除
+                    </button>
+                    <button className="btn ghost" disabled={busy} onClick={() => setConfirmId(null)}>
+                      取消
+                    </button>
+                  </>
+                ) : (
+                  <button className="btn ghost" disabled={busy} onClick={() => setConfirmId(job.id)}>
+                    删除
+                  </button>
+                )}
               </div>
+              {confirmId === job.id && (
+                <p className="err" style={{ marginTop: 8 }}>
+                  将删除工作台任务和本机副本，不会删除 Drive 原文件。此操作不可撤销。
+                </p>
+              )}
             </article>
           ))}
         </div>

@@ -103,10 +103,13 @@ See `.env.example`. Important ones:
 
 | 步骤 | 幂等键 |
 | --- | --- |
-| 同步 | `assets.source_key`（`drive:{id}` 或 `mock:{filename}`）已存在则跳过 |
+| 同步 | `assets.source_key`（`drive:{id}` 或 `mock:{filename}`）已存在则跳过；若该 key 在 `ignored_sources`（工作台删过）也跳过 |
 | 渲染 | 同 `job` + `crop_fingerprint` 且成片文件仍在 → 跳过 |
 | 上传 | 已有 `youtube_video_id` → 跳过 |
 | 发布 | `youtube_privacy == public` → 跳过 |
+| 删除 | `DELETE /api/jobs/{id}`：删 job 行与本机副本（素材 `/data/assets`、成片/字幕 `/data/renders`、工作目录 `/data/work/{id}`、mock YouTube JSON）。独占素材会一并删 asset 行。Drive 原文件不动。 |
+
+**删除后会不会再被同步回来？** 会记一条 `ignored_sources.source_key`，所以下次 Drive / 收件箱同步会计入「跳过」，**不会立刻重新入库**。这是为了让任务列表保持干净（调度器会自动扫盘）。云端 Drive 仍是源文件；若要从工作台再做同一条：本地上传会清掉该忽略并重新入库；Drive 文件暂无「取消忽略」按钮（P0）。YouTube 上已上传的草稿/公开视频也不会被删。
 
 失败停在**当前阶段**（`RENDERING` / `CHECKING` / `UPLOADING` / `PUBLISHING`…），
 **不会**重置回 `NEW`。界面「从当前阶段重试」只把 `status` 设回 `pending`。
@@ -211,3 +214,5 @@ Personal cat-shorts workbench. Compose brings up web, API, worker, scheduler, an
 **Caption contract** for a later AI: `docs/CAPTION_CONTRACT.md`. The FFmpeg path does not need an AI station.
 
 **Idempotency:** sync by `source_key`, render by crop fingerprint, upload/publish by stored YouTube id/privacy. Retry is stage-based, never reset-to-NEW.
+
+**Delete:** `DELETE /api/jobs/{id}` (admin Bearer) removes the job row and local copies. Drive originals stay. The `source_key` is recorded in `ignored_sources` so the next sync does not immediately re-ingest the same file. Explicit local upload of the same key clears that ignore.

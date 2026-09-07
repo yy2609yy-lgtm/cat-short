@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.config import settings
 from app.db import Base
-from app.models import Asset, Job, SyncState  # noqa: F401
+from app.models import Asset, IgnoredSource, Job, SyncState  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)

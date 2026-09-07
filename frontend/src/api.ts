@@ -34,6 +34,9 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
   }
+  if (res.status === 204) {
+    return undefined as T;
+  }
   if (res.headers.get("content-type")?.includes("application/json")) {
     return (await res.json()) as T;
   }
@@ -54,6 +57,7 @@ export const api = {
     req<Job>(`/api/jobs/${id}/confirm`, { method: "POST", body: JSON.stringify(crop) }),
   retry: (id: string) => req<Job>(`/api/jobs/${id}/retry`, { method: "POST" }),
   publish: (id: string) => req<Job>(`/api/jobs/${id}/publish`, { method: "POST" }),
+  deleteJob: (id: string) => req<void>(`/api/jobs/${id}`, { method: "DELETE" }),
   syncNow: () =>
     req<{ mode: string; ingested: number; skipped: number; errors: string[] }>("/api/sync/drive", {
       method: "POST",

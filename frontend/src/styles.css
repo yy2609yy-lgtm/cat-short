@@ -96,6 +96,7 @@ button, input, select { font: inherit; }
 .btn.moss { background: var(--moss); }
 .btn.clay { background: var(--clay); color: #fff; }
 .btn.gold { background: var(--gold); }
+.btn.rose { background: var(--rose); color: #1a120d; }
 
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .field label { color: var(--muted); font-size: 13px; }

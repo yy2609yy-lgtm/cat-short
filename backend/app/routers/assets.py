@@ -40,7 +40,10 @@ async def upload_local(file: UploadFile = File(...), db: Session = Depends(get_d
         source_key=source_key,
         filename=filename,
         mime=file.content_type or "video/mp4",
+        honor_ignore=False,
     )
+    if job is None:
+        raise HTTPException(500, "入库失败")
     loaded = get_job(db, job.id)
     from app.routers.jobs import _out
 

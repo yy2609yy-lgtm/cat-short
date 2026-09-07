@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, renderUrl, sourceUrl } from "../api";
 import type { CropParams, Job } from "../types";
 
@@ -13,12 +13,14 @@ const emptyCrop = (duration: number): CropParams => ({
 
 export default function Editor() {
   const { id } = useParams<{ id: string }>();
+  const nav = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [job, setJob] = useState<Job | null>(null);
   const [crop, setCrop] = useState<CropParams>(emptyCrop(8));
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   async function load() {
     if (!id) return;
@@ -88,6 +90,19 @@ export default function Editor() {
     } catch (e) {
       setErr(e instanceof Error ? e.message : "重试失败");
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeJob() {
+    if (!id) return;
+    setBusy(true);
+    setErr("");
+    try {
+      await api.deleteJob(id);
+      nav("/");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "删除失败");
       setBusy(false);
     }
   }
@@ -237,7 +252,24 @@ export default function Editor() {
                 从当前阶段重试
               </button>
             )}
+            {confirmDelete ? (
+              <>
+                <button className="btn rose" disabled={busy} onClick={removeJob}>
+                  确认删除
+                </button>
+                <button className="btn ghost" disabled={busy} onClick={() => setConfirmDelete(false)}>
+                  取消
+                </button>
+              </>
+            ) : (
+              <button className="btn ghost" disabled={busy} onClick={() => setConfirmDelete(true)}>
+                删除
+              </button>
+            )}
           </div>
+          {confirmDelete && (
+            <p className="err">将删除工作台任务和本机副本，不会删除 Drive 原文件。此操作不可撤销。</p>
+          )}
         </div>
       </div>
     </div>
